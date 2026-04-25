@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MirrorShop Audit</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="mirror-shell">
+    <section class="hero-panel">
+      <p class="eyebrow">MirrorShop</p>
+      <h1>AI Storefront Visibility Audit</h1>
+      <p class="hero-copy">What an AI shopping agent could infer from your public storefront content.</p>
+    </section>
+
+    <section class="input-panel">
+      <div>
+        <div class="section-kicker">Input</div>
+        <h2>Run A Live Audit</h2>
+      </div>
+
+      <form class="scan-form" data-scan-form>
+        <label class="field">
+          <span>Shopify URL</span>
+          <input name="url" type="url" placeholder="https://www.allbirds.com/products/mens-cruiser-canvas-sea-spray" required>
+        </label>
+
+        <div class="identity-grid">
+          <label class="field">
+            <span>Identity 1</span>
+            <input name="identity_1" type="text" placeholder="Luxury / Premium" required>
+          </label>
+          <label class="field">
+            <span>Identity 2</span>
+            <input name="identity_2" type="text" placeholder="Eco-Friendly Packaging">
+          </label>
+          <label class="field">
+            <span>Identity 3</span>
+            <input name="identity_3" type="text" placeholder="Fast 2-Day Shipping">
+          </label>
+        </div>
+
+        <div class="scan-actions">
+          <button type="submit" data-submit-button>Run Audit</button>
+          <p class="status-line" data-status-line data-state="idle">Ready for a live Shopify scan.</p>
+        </div>
+      </form>
+    </section>
+
+    <section class="results-shell" data-result-root>
+      <div class="empty-state">
+        <div class="section-kicker">Output</div>
+        <h2>Awaiting First Scan</h2>
+        <p>The first live result will render here with perception, evidence, fixes, and deterministic <code>llms.txt</code>.</p>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="/src/frontend/client.js"></script>
+</body>
+</html>

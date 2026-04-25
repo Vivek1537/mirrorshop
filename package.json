@@ -1,0 +1,16 @@
+{
+  "name": "mirrorshop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AI storefront visibility audit for Shopify merchants.",
+  "scripts": {
+    "dev": "node src/server.js",
+    "render:demo": "node scripts/render-demo.js",
+    "smoke:scrape": "node scripts/smoke-scrape.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "playwright-core": "^1.58.0"
+  }
+}
