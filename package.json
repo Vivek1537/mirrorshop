@@ -6,6 +6,7 @@
   "description": "AI storefront visibility audit for Shopify merchants.",
   "scripts": {
     "dev": "node src/server.js",
+    "start": "node src/server.js",
     "render:demo": "node scripts/render-demo.js",
     "smoke:scrape": "node scripts/smoke-scrape.js",
     "test": "node --test"
