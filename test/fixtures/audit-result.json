@@ -1,0 +1,46 @@
+{
+  "summary": "An AI shopping agent could infer that GlowJar sells premium handmade skincare, but shipping speed is not evidenced.",
+  "inferred_identities": ["Premium skincare", "Handmade", "Giftable"],
+  "submitted_results": [
+    {
+      "label": "Vegan",
+      "status": "UNCLEAR",
+      "evidence": "No explicit vegan ingredient or certification evidence found."
+    },
+    {
+      "label": "Affordable",
+      "status": "FAIL",
+      "evidence": "Product language emphasizes premium handmade skincare; no affordability claim found."
+    },
+    {
+      "label": "Next-day shipping",
+      "status": "FAIL",
+      "evidence": "No next-day shipping claim found on homepage, product page, or policy links."
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": 1,
+      "surface": "shipping policy page",
+      "issue": "Shipping speed is not evidenced",
+      "fix": "Add a shipping policy page and link it from product pages with explicit next-day delivery language."
+    },
+    {
+      "priority": 2,
+      "surface": "product description",
+      "issue": "Vegan claim lacks proof",
+      "fix": "Add vegan certification or ingredient evidence near product descriptions."
+    }
+  ],
+  "llms_txt_descriptions": {
+    "/products/vitamin-c-serum": "Vitamin C serum described as brightening and handmade for daily skincare routines.",
+    "/policies/shipping-policy": "Shipping policy page for delivery timing and fulfillment details."
+  },
+  "source_coverage": {
+    "homepage": true,
+    "product_page": true,
+    "robots_txt": true,
+    "llms_txt_existing": false,
+    "json_ld": true
+  }
+}
