@@ -17,6 +17,13 @@ test("chooseProductLink prefers first product path", () => {
   ]), "/products/shoppy-magnet");
 });
 
+test("chooseProductLink accepts collection-scoped Shopify product paths", () => {
+  assert.equal(chooseProductLink([
+    { path: "/pages/about", text: "About" },
+    { path: "/collections/spring-must-haves/products/darren-signature-carryall", text: "Darren Signature Carryall" }
+  ]), "/collections/spring-must-haves/products/darren-signature-carryall");
+});
+
 test("normalizeRequestedPath preserves requested product path", () => {
   assert.equal(
     normalizeRequestedPath(
@@ -32,6 +39,16 @@ test("normalizeRequestedPath preserves requested product path", () => {
       "https://www.allbirds.com"
     ),
     "/"
+  );
+});
+
+test("normalizeRequestedPath preserves collection-scoped Shopify product paths", () => {
+  assert.equal(
+    normalizeRequestedPath(
+      "https://www.rebeccaminkoff.com/collections/spring-must-haves/products/darren-signature-carryall-hs26eddtdn-deni-blue?variant=123",
+      "https://www.rebeccaminkoff.com"
+    ),
+    "/collections/spring-must-haves/products/darren-signature-carryall-hs26eddtdn-deni-blue"
   );
 });
 
@@ -75,6 +92,16 @@ test("cleanExtractedText removes consent and location blocks inside long storefr
   `);
 
   assert.equal(cleaned, "Spend $75 more to earn free shipping!\nMATERIALS FROM THE EARTH");
+});
+
+test("cleanExtractedText preserves standalone product badges like NEW", () => {
+  const cleaned = cleanExtractedText(`
+    NEW
+    Norse Winter Beard Balm
+    Made with 3X more natural butters.
+  `);
+
+  assert.equal(cleaned, "NEW\nNorse Winter Beard Balm\nMade with 3X more natural butters.");
 });
 
 test("normalizeInternalLinks keeps internal links only and dedupes by path", () => {

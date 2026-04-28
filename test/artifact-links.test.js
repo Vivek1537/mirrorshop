@@ -39,3 +39,28 @@ test("selectArtifactLinks keeps homepage, scanned product, and high-signal suppo
     "/pages/help"
   ]);
 });
+
+test("selectArtifactLinks canonicalizes collection-scoped Shopify product pages to the scanned product path", () => {
+  const links = selectArtifactLinks({
+    pages: [
+      { role: "homepage", url: "https://shop.example/", title: "Shop Example", h1: "Shop Example" },
+      {
+        role: "product_page",
+        url: "https://shop.example/collections/spring-must-haves/products/darren-signature-carryall",
+        title: "Darren Signature Carryall",
+        h1: "Darren Signature Carryall"
+      }
+    ],
+    json_ld: [],
+    internal_links: [
+      { path: "/products/soraya-sunglasses", text: "Soraya Sunglasses" },
+      { path: "/pages/help", text: "Help Center" }
+    ]
+  });
+
+  assert.deepEqual(links.map((link) => link.path), [
+    "/",
+    "/products/darren-signature-carryall",
+    "/pages/help"
+  ]);
+});

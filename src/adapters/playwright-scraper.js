@@ -20,6 +20,16 @@ const DEFAULT_BLOCKED_SELECTORS = [
   "iframe"
 ];
 
+const PRODUCT_BADGE_PATTERNS = [
+  "\\bnew\\b",
+  "\\bbest ?seller\\b",
+  "\\bsale\\b",
+  "\\blimited(?: edition)?\\b",
+  "\\bexclusive\\b",
+  "\\bpre[- ]?order\\b",
+  "\\bsold out\\b"
+];
+
 export function createPlaywrightScraper({
   playwright,
   browserOptions = {},
@@ -54,7 +64,7 @@ export function createPlaywrightScraper({
         throw new MirrorShopError(ERROR_CODES.PASSWORD_PROTECTED, "Storefront is password protected.");
       }
 
-      const productPath = requestedPath.startsWith("/products/")
+      const productPath = isProductLikePath(requestedPath)
         ? requestedPath
         : chooseProductLink(homepage.internalLinks);
       let productPage = null;
@@ -96,13 +106,17 @@ export function createPlaywrightScraper({
 }
 
 export function chooseProductLink(links = []) {
-  const candidate = links.find((link) => typeof link?.path === "string" && link.path.startsWith("/products/"));
+  const candidate = links.find((link) => typeof link?.path === "string" && isProductLikePath(link.path));
   return candidate ? candidate.path : null;
 }
 
 export function normalizeRequestedPath(inputUrl, storeUrl) {
   const url = new URL(inputUrl, storeUrl);
   return url.pathname || "/";
+}
+
+function isProductLikePath(path) {
+  return typeof path === "string" && path.includes("/products/");
 }
 
 export function sanitizePageSnapshot(snapshot, role, storeUrl) {
@@ -265,7 +279,48 @@ function normalizeLink(link, origin) {
 async function extractPageSnapshot(page, url, blockedSelectors) {
   const html = await page.content();
 
-  return page.evaluate(({ blockedSelectors, url }) => {
+  return page.evaluate(({ blockedSelectors, url, badgePatterns }) => {
+    function normalizeLocalWhitespace(value) {
+      return String(value).replace(/\s+/g, " ").trim();
+    }
+
+    function collectVisibleBadgeSignals() {
+      const titleRect = document.querySelector("h1")?.getBoundingClientRect();
+      const patterns = badgePatterns.map((pattern) => new RegExp(pattern, "i"));
+
+      const candidates = Array.from(document.querySelectorAll("span, div, p, strong, em, button, a"))
+        .map((node) => {
+          const text = normalizeLocalWhitespace(node.textContent || "");
+          if (!text || text.length > 24 || !patterns.some((pattern) => pattern.test(text))) {
+            return null;
+          }
+
+          const rect = node.getBoundingClientRect();
+          const style = window.getComputedStyle(node);
+          const visible = rect.width > 0
+            && rect.height > 0
+            && style.visibility !== "hidden"
+            && style.display !== "none";
+
+          if (!visible) {
+            return null;
+          }
+
+          if (titleRect) {
+            const verticallyNearTitle = Math.abs(rect.top - titleRect.top) < 220;
+            const horizontallyNearTitle = rect.left > titleRect.left - 120 && rect.left < titleRect.right + 320;
+            if (!verticallyNearTitle || !horizontallyNearTitle) {
+              return null;
+            }
+          }
+
+          return text.toUpperCase();
+        })
+        .filter(Boolean);
+
+      return [...new Set(candidates)];
+    }
+
     const jsonLd = Array.from(document.querySelectorAll('script[type="application/ld+json"]'))
       .map((node) => {
         try {
@@ -287,15 +342,17 @@ async function extractPageSnapshot(page, url, blockedSelectors) {
         text: node.textContent || ""
       }));
 
+    const badgeSignals = collectVisibleBadgeSignals();
+
     return {
       url,
       title: document.title || "",
       h1: document.querySelector("h1")?.textContent || "",
-      text: document.body?.innerText || "",
+      text: [badgeSignals.join("\n"), document.body?.innerText || ""].filter(Boolean).join("\n"),
       jsonLd,
       internalLinks
     };
-  }, { blockedSelectors, url }).then((snapshot) => {
+  }, { blockedSelectors, url, badgePatterns: PRODUCT_BADGE_PATTERNS }).then((snapshot) => {
     const fallbackJsonLd = extractJsonLdFromHtml(html);
     return {
       ...snapshot,

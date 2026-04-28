@@ -135,12 +135,17 @@ function findLocalChromiumExecutable(root) {
     .sort()
     .at(-1);
   if (headlessShell) {
-    return join(
-      browsersRoot,
-      headlessShell,
-      "chrome-headless-shell-linux64",
-      "chrome-headless-shell"
-    );
+    const platformPath = platformRelativePath({
+      linux: ["chrome-headless-shell-linux64", "chrome-headless-shell"],
+      win32: ["chrome-headless-shell-win64", "chrome-headless-shell.exe"],
+      darwin: ["chrome-headless-shell-mac", "chrome-headless-shell"]
+    });
+    if (platformPath) {
+      const resolved = join(browsersRoot, headlessShell, ...platformPath);
+      if (existsSync(resolved)) {
+        return resolved;
+      }
+    }
   }
 
   const chromiumDir = readdirSync(browsersRoot)
@@ -148,10 +153,24 @@ function findLocalChromiumExecutable(root) {
     .sort()
     .at(-1);
   if (chromiumDir) {
-    return join(browsersRoot, chromiumDir, "chrome-linux", "chrome");
+    const platformPath = platformRelativePath({
+      linux: ["chrome-linux", "chrome"],
+      win32: ["chrome-win", "chrome.exe"],
+      darwin: ["chrome-mac", "Chromium.app", "Contents", "MacOS", "Chromium"]
+    });
+    if (platformPath) {
+      const resolved = join(browsersRoot, chromiumDir, ...platformPath);
+      if (existsSync(resolved)) {
+        return resolved;
+      }
+    }
   }
 
   return null;
+}
+
+function platformRelativePath(pathsByPlatform) {
+  return pathsByPlatform[process.platform] || null;
 }
 
 function statusFromErrorCode(code) {

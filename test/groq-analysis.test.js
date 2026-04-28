@@ -30,6 +30,7 @@ test("prompt uses defensible AI shopping agent language and bans URL invention",
   assert.doesNotMatch(combined, /what ChatGPT\/Gemini would say/i);
   assert.match(combined, /Never invent links/);
   assert.match(combined, /\/products\/vitamin-c-serum/);
+  assert.match(combined, /conditional evidence such as over \$75/i);
 });
 
 test("parser accepts valid revised audit result", () => {

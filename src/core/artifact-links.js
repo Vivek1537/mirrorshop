@@ -109,11 +109,12 @@ function buildPageLinks(pages) {
   return pages
     .map((page) => {
       try {
-        const path = new URL(page.url).pathname || "/";
+        const rawPath = new URL(page.url).pathname || "/";
+        const path = canonicalizeProductPath(rawPath);
         return {
           path,
           text: cleanLine(page.h1 || page.title || path),
-          group: path === "/" ? "storefront" : path.startsWith("/products/") ? "products" : classifyLink({
+          group: path === "/" ? "storefront" : isProductLikePath(path) ? "products" : classifyLink({
             path,
             text: page.h1 || page.title || path
           })
@@ -203,7 +204,7 @@ function scoreLink(link) {
     score += 20;
   }
 
-  if (link.path.startsWith("/products/")) {
+  if (isProductLikePath(link.path)) {
     score -= 80;
   }
 
@@ -279,7 +280,7 @@ function addUnique(selected, seen, link) {
 function normalizePath(value) {
   try {
     const url = value.startsWith("http") ? new URL(value) : new URL(value, "https://example.com");
-    return url.pathname === "" ? "/" : url.pathname;
+    return canonicalizeProductPath(url.pathname === "" ? "/" : url.pathname);
   } catch {
     return "";
   }
@@ -291,4 +292,17 @@ function pathDepth(path) {
 
 function cleanLine(value) {
   return String(value).replace(/\s+/g, " ").trim();
+}
+
+function canonicalizeProductPath(path) {
+  if (!isProductLikePath(path)) {
+    return path;
+  }
+
+  const productIndex = path.indexOf("/products/");
+  return path.slice(productIndex) || path;
+}
+
+function isProductLikePath(path) {
+  return typeof path === "string" && path.includes("/products/");
 }
