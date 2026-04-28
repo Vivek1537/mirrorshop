@@ -17,6 +17,7 @@ test("dashboard renders all five revised MirrorShop sections", async () => {
   });
   const scrape = { source_coverage: audit.source_coverage };
   const html = renderDashboard({ audit, llmsTxt, scrape });
+  const pageHtml = renderPage({ audit, llmsTxt, scrape });
 
   [
     "ai-perception-summary",
@@ -28,7 +29,9 @@ test("dashboard renders all five revised MirrorShop sections", async () => {
     assert.match(html, new RegExp(`data-section="${section}"`));
   });
 
-  assert.match(html, /What an AI shopping agent could infer/);
+  assert.doesNotMatch(html, /AI Storefront Visibility Audit/);
+  assert.match(pageHtml, /What an AI shopping agent could infer/);
+  assert.equal(pageHtml.match(/AI Storefront Visibility Audit/g).length, 1);
   assert.match(html, /Submitted Identities/);
   assert.match(html, /Inferred Identities/);
   assert.match(html, /Deterministic llms\.txt/);

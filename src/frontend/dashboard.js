@@ -1,12 +1,5 @@
 export function renderDashboard({ audit, llmsTxt, scrape }) {
   return `
-    <main class="mirror-shell">
-      <section class="hero-panel">
-        <p class="eyebrow">MirrorShop</p>
-        <h1>AI Storefront Visibility Audit</h1>
-        <p class="hero-copy">What an AI shopping agent could infer from your public storefront content.</p>
-      </section>
-
       <section class="audit-section" data-section="ai-perception-summary">
         <div class="section-kicker">01 / Perception</div>
         <h2>AI Perception Summary</h2>
@@ -61,7 +54,6 @@ export function renderDashboard({ audit, llmsTxt, scrape }) {
           return `<span class="${value ? "covered" : "missing"}">${escapeHtml(key.replaceAll("_", " "))}</span>`;
         }).join("")}
       </section>
-    </main>
   `;
 }
 
@@ -75,7 +67,14 @@ export function renderPage(model) {
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  ${renderDashboard(model)}
+  <main class="mirror-shell">
+    <section class="hero-panel">
+      <p class="eyebrow">MirrorShop</p>
+      <h1>AI Storefront Visibility Audit</h1>
+      <p class="hero-copy">What an AI shopping agent could infer from your public storefront content.</p>
+    </section>
+    ${renderDashboard(model)}
+  </main>
 </body>
 </html>
 `;
