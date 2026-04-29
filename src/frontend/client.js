@@ -5,6 +5,8 @@ const resultRoot = document.querySelector("[data-result-root]");
 const statusLine = document.querySelector("[data-status-line]");
 const submitButton = document.querySelector("[data-submit-button]");
 
+dedupeHeroPanels();
+
 if (form && resultRoot && statusLine && submitButton) {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -64,4 +66,17 @@ if (form && resultRoot && statusLine && submitButton) {
 function setBusyState(isBusy) {
   submitButton.disabled = isBusy;
   submitButton.textContent = isBusy ? "Scanning..." : "Run Audit";
+}
+
+function dedupeHeroPanels() {
+  const heroPanels = document.querySelectorAll(".hero-panel");
+  if (heroPanels.length <= 1) {
+    return;
+  }
+
+  heroPanels.forEach((panel, index) => {
+    if (index > 0) {
+      panel.remove();
+    }
+  });
 }

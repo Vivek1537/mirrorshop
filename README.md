@@ -57,6 +57,11 @@ The app runs at `http://localhost:3000`.
 npm test
 ```
 
+## Known Limitations
+
+- Evidence extraction can still include occasional storefront UI chrome text (for example, fragments like "Open search" or "Open cart") in edge layouts.
+- Recommendation language quality is improving but may still sound generic for some borderline claims.
+
 ## Hackathon Context
 
 Built for the Kasparro Agentic Commerce Hackathon, Track 5 - AI Representation Optimizer, April 2026.

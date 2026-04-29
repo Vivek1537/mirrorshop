@@ -356,6 +356,7 @@ pre {
 .artifact-code {
   margin: 0;
   padding: 16px;
+  max-height: 420px;
   overflow: auto;
   color: #d6e6d9;
   font-family: "Courier New", monospace;
