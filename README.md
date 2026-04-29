@@ -1,85 +1,64 @@
 # MirrorShop
 
-MirrorShop is an AI storefront visibility audit for Shopify merchants.
+AI storefront visibility audit for Shopify merchants.
 
-It measures the gap between what a merchant wants AI shopping agents to understand and what an AI shopping agent can actually infer from the public storefront.
+MirrorShop shows merchants how AI shopping agents may perceive their public storefront. A merchant enters a Shopify URL and up to three target brand identities, and the tool compares that intent against rendered storefront evidence, JSON-LD schema, and machine-readable surfaces. The result is a structured audit with AI perception, per-identity grading, evidence, Shopify-specific fixes, and a deterministic `llms.txt` artifact built from real extracted links.
 
-`llms.txt` is an output artifact, not the product headline.
+Live demo: <https://mirrorshop-production.up.railway.app>  
+Demo video: final recording link pending before submission
 
-## Why it exists
+## Tech Stack
 
-AI shopping agents do not see a brand the way a merchant sees it internally. They infer identity from whatever is publicly visible on the storefront: product copy, policy pages, pricing, structured data, shipping claims, and category navigation.
+- Node.js 18+
+- Express-style HTTP API in Node.js
+- Playwright with headless Chromium
+- Groq `llama-3.3-70b-versatile`
+- Vanilla HTML/CSS/JS
 
-MirrorShop turns that into a constrained audit:
+## Setup
 
-- scrape the storefront as a public shopper would encounter it
-- run a structured AI visibility analysis against merchant-submitted identity claims
-- show what the storefront actually supports, what is missing, and where the merchant should fix it
-- generate a deterministic `llms.txt` artifact from curated real storefront paths
-
-## What it does
-
-Given a Shopify product URL and one to three target identities, MirrorShop:
-
-1. scrapes the homepage and the product page with Playwright
-2. extracts public text, internal links, `robots.txt`, `llms.txt` if present, and JSON-LD
-3. sends a constrained prompt to Groq for blind inference plus identity grading
-4. validates the response against a strict contract
-5. renders an audit showing summary, inferred identities, evidence, recommendations, and deterministic `llms.txt`
-
-## Current capabilities
-
-- Live storefront scraping with Playwright
-- Real LLM-backed visibility analysis via Groq
-- Strict audit contract validation
-- Deterministic `llms.txt` generation with curated real links only
-- Store-name resolution from storefront evidence
-- Recommendation surfaces normalized to concrete Shopify content areas
-- Test coverage for scraping, contract validation, artifact generation, and dashboard rendering
-
-## Stack
-
-- Node.js
-- Playwright
-- Groq API
-- Vanilla HTML, CSS, and JavaScript
-
-## Local setup
-
-### Requirements
-
-- Node.js 20+
-- A local Playwright browser install in `.ms-playwright`
-- `GROQ_API_KEY` for live analysis
-
-### Install
+Requirements: Node.js 18+ and npm.
 
 ```bash
+git clone <repo-url>
+cd mirrorshop
 npm install
 ```
 
-### Run the app
+`npm install` runs `playwright-core install chromium` automatically through `postinstall`.
+
+Create `.env` in the repo root:
 
 ```bash
-GROQ_API_KEY=your_key_here npm run dev
+GROQ_API_KEY=your_groq_key
+INTERNAL_API_KEY=optional_internal_key
+PORT=3000
 ```
 
-The app will start on `http://127.0.0.1:3000`.
+Start the app:
 
-### Run tests
+```bash
+npm start
+```
+
+The app runs at `http://localhost:3000`.
+
+## Environment Variables
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `GROQ_API_KEY` | Yes | Calls Groq for visibility analysis. |
+| `INTERNAL_API_KEY` | No | Reserved for authenticating internal service calls in multi-service deployments; not required for the public demo flow. |
+| `PORT` | No | Server port; defaults to `3000`. |
+
+## Tests
 
 ```bash
 npm test
 ```
 
-## Project structure
+## Hackathon Context
 
-- `src/adapters/` — Playwright and Groq integrations
-- `src/core/` — audit contract, scan pipeline, deterministic artifact logic
-- `src/frontend/` — dashboard rendering and client behavior
-- `public/` — static shell and styles
-- `test/` — unit and integration coverage
+Built for the Kasparro Agentic Commerce Hackathon, Track 5 - AI Representation Optimizer, April 2026.
 
-## Status
-
-MirrorShop is past the mock stage and already runs end to end on real storefronts. The current work is focused on quality tightening: sharper recommendations, better evidence grading for soft claims, and stronger artifact quality.
+This was a solo submission by Vivek Boora. The work split was roughly 60% engineering and 40% product thinking. Product thinking included problem framing, scope decisions, grading rubric design, `llms.txt` spec research, and testing against five real storefronts. Engineering included the Playwright scraper, Groq integration, deterministic post-processing, audit refinement layer, and Railway deployment.

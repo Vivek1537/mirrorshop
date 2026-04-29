@@ -5,6 +5,7 @@
   "type": "module",
   "description": "AI storefront visibility audit for Shopify merchants.",
   "scripts": {
+    "postinstall": "npx playwright-core install chromium",
     "dev": "node src/server.js",
     "start": "node src/server.js",
     "render:demo": "node scripts/render-demo.js",

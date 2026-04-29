@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { existsSync, readdirSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,6 +14,8 @@ const projectRoot = normalize(join(fileURLToPath(new URL(".", import.meta.url)),
 const publicRoot = join(projectRoot, "public");
 const srcRoot = join(projectRoot, "src");
 const localBrowserPath = findLocalChromiumExecutable(projectRoot);
+
+loadDotEnv(join(projectRoot, ".env"));
 
 const scraper = createPlaywrightScraper({
   playwright: { chromium },
@@ -171,6 +174,33 @@ function findLocalChromiumExecutable(root) {
 
 function platformRelativePath(pathsByPlatform) {
   return pathsByPlatform[process.platform] || null;
+}
+
+function loadDotEnv(filePath) {
+  if (!existsSync(filePath)) {
+    return;
+  }
+
+  const entries = readFileSync(filePath, "utf8").split(/\r?\n/);
+  entries.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      return;
+    }
+
+    const separatorIndex = trimmed.indexOf("=");
+    if (separatorIndex === -1) {
+      return;
+    }
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    const rawValue = trimmed.slice(separatorIndex + 1).trim();
+    if (!key || process.env[key] !== undefined) {
+      return;
+    }
+
+    process.env[key] = rawValue.replace(/^["']|["']$/g, "");
+  });
 }
 
 function statusFromErrorCode(code) {
