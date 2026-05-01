@@ -17,8 +17,9 @@ export function renderDashboard({ audit, llmsTxt, scrape }) {
         <div>
           <div class="section-kicker">02B / AI-Inferred</div>
           <h2>Inferred Identities</h2>
-          <div class="chip-stack inferred">
-            ${audit.inferred_identities.map((item) => `<span class="claim-chip">${escapeHtml(item)}</span>`).join("")}
+          <p class="supporting-copy">Each inference is paired with the exact storefront evidence that triggered it.</p>
+          <div class="inferred-evidence-grid">
+            ${audit.inferred_identities.map(renderInferredIdentity).join("")}
           </div>
         </div>
       </section>
@@ -81,8 +82,9 @@ export function renderPage(model) {
 }
 
 function renderEvidenceCard(item) {
+  const tone = evidenceHasConflict(item.evidence) ? " conflict" : "";
   return `
-    <article class="evidence-card ${item.status.toLowerCase()}">
+    <article class="evidence-card ${item.status.toLowerCase()}${tone}">
       <div class="card-topline">
         <h3>${escapeHtml(item.label)}</h3>
         <span>${escapeHtml(item.status)}</span>
@@ -102,6 +104,19 @@ function renderRecommendation(item) {
   `;
 }
 
+function renderInferredIdentity(item) {
+  return `
+    <article class="evidence-card inferred-identity">
+      <div class="card-topline">
+        <h3>${escapeHtml(item.label)}</h3>
+        <span>Inferred</span>
+      </div>
+      <p class="evidence-note">Evidence</p>
+      <p>${escapeHtml(item.because)}</p>
+    </article>
+  `;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -109,4 +124,8 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function evidenceHasConflict(value) {
+  return typeof value === "string" && value.includes("CONFLICT DETECTED");
 }

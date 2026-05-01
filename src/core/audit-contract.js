@@ -8,7 +8,7 @@ export function validateAuditResult(result) {
   }
 
   requireString(result.summary, "summary", errors);
-  requireStringArray(result.inferred_identities, "inferred_identities", errors);
+  validateInferredIdentities(result.inferred_identities, errors);
   validateSubmittedResults(result.submitted_results, errors);
   validateRecommendations(result.recommendations, errors);
   validateDescriptions(result.llms_txt_descriptions, errors);
@@ -35,6 +35,29 @@ function validateSubmittedResults(value, errors) {
 
     if (!RESULT_STATUSES.includes(item.status)) {
       errors.push(`${path}.status must be one of ${RESULT_STATUSES.join(", ")}.`);
+    }
+  });
+}
+
+function validateInferredIdentities(value, errors) {
+  if (!Array.isArray(value)) {
+    errors.push("inferred_identities must be an array.");
+    return;
+  }
+
+  value.forEach((item, index) => {
+    const path = `inferred_identities[${index}]`;
+    if (!isObject(item)) {
+      errors.push(`${path} must be an object.`);
+      return;
+    }
+
+    requireString(item.label, `${path}.label`, errors);
+    requireString(item.because, `${path}.because`, errors);
+
+    const keys = Object.keys(item);
+    if (keys.length !== 2 || !keys.includes("label") || !keys.includes("because")) {
+      errors.push(`${path} must contain only label and because fields.`);
     }
   });
 }
@@ -92,12 +115,6 @@ function validateSourceCoverage(value, errors) {
 function requireString(value, path, errors) {
   if (typeof value !== "string" || value.trim() === "") {
     errors.push(`${path} must be a non-empty string.`);
-  }
-}
-
-function requireStringArray(value, path, errors) {
-  if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || item.trim() === "")) {
-    errors.push(`${path} must be an array of non-empty strings.`);
   }
 }
 

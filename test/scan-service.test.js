@@ -32,7 +32,11 @@ test("runScan returns audit plus deterministic llms.txt", async () => {
     scrapeStorefront: async () => scrapePayload,
     analyzeVisibility: async () => JSON.stringify({
       summary: "An AI shopping agent could infer premium handmade skincare.",
-      inferred_identities: ["Premium skincare", "Handmade", "Giftable"],
+      inferred_identities: [
+        { label: "Premium skincare", because: "Homepage text says \"Premium handmade skincare for gifting.\"." },
+        { label: "Handmade", because: "Homepage text says \"Premium handmade skincare for gifting.\"." },
+        { label: "Giftable", because: "Homepage text says \"Premium handmade skincare for gifting.\"." }
+      ],
       submitted_results: [
         { label: "Vegan", status: "UNCLEAR", evidence: "No vegan certification evidence found." }
       ],
@@ -48,7 +52,8 @@ test("runScan returns audit plus deterministic llms.txt", async () => {
   });
 
   assert.equal(response.ok, true);
-  assert.equal(response.data.audit.inferred_identities[0], "Premium skincare");
+  assert.equal(response.data.audit.inferred_identities[0].label, "Premium skincare");
+  assert.match(response.data.audit.inferred_identities[0].because, /Premium handmade skincare for gifting/);
   assert.match(response.data.llms_txt, /^# GlowJar/m);
   assert.match(response.data.llms_txt, /\/products\/vitamin-c-serum/);
   assert.equal(response.data.scrape.source_coverage.product_page, true);
@@ -78,7 +83,9 @@ test("runScan preserves requested product path for the scraper", async () => {
     },
     analyzeVisibility: async () => JSON.stringify({
       summary: "An AI shopping agent could infer premium handmade skincare.",
-      inferred_identities: ["Premium skincare"],
+      inferred_identities: [
+        { label: "Premium skincare", because: "Homepage text says \"Premium handmade skincare for gifting.\"." }
+      ],
       submitted_results: [
         { label: "Vegan", status: "UNCLEAR", evidence: "No vegan certification evidence found." }
       ],
@@ -120,7 +127,9 @@ test("runScan accepts llms descriptions for scanned product pages even when not 
     scrapeStorefront: async () => payloadWithoutProductLink,
     analyzeVisibility: async () => JSON.stringify({
       summary: "An AI shopping agent could infer premium handmade skincare.",
-      inferred_identities: ["Premium skincare"],
+      inferred_identities: [
+        { label: "Premium skincare", because: "Homepage text says \"Premium handmade skincare for gifting.\"." }
+      ],
       submitted_results: [
         { label: "Vegan", status: "UNCLEAR", evidence: "No vegan certification evidence found." }
       ],
@@ -191,7 +200,9 @@ test("runScan upgrades premium-style FAIL to UNCLEAR when indirect quality evide
     scrapeStorefront: async () => premiumPayload,
     analyzeVisibility: async () => JSON.stringify({
       summary: "Summary",
-      inferred_identities: ["Comfort-focused"],
+      inferred_identities: [
+        { label: "Comfort-focused", because: "Homepage text says \"Shop socks built for everyday comfort.\"." }
+      ],
       submitted_results: [
         { label: "Premium", status: "FAIL", evidence: "No explicit evidence of premium materials, craftsmanship, or pricing found on the storefront." }
       ],
@@ -208,6 +219,59 @@ test("runScan upgrades premium-style FAIL to UNCLEAR when indirect quality evide
   assert.equal(response.ok, true);
   assert.equal(response.data.audit.submitted_results[0].status, "UNCLEAR");
   assert.match(response.data.audit.submitted_results[0].evidence, /Indirect quality signals exist/);
+});
+
+test("runScan preserves inferred identity because text when it cites donation evidence from the storefront", async () => {
+  const donationPayload = buildScrapePayload({
+    storeUrl: "https://bombas.example",
+    homepage: {
+      title: "Bombas",
+      h1: "Comfort-first essentials",
+      text: "ONE PURCHASED = ONE DONATED. We donate on your behalf in all 50 states. 200 MILLION+ DONATIONS.",
+      internalLinks: [
+        { href: "/pages/help-center", text: "Help Center" }
+      ]
+    },
+    productPage: {
+      url: "/products/mens-running-ankle-sock-3-pack",
+      title: "Men's Running Ankle Sock 3-Pack",
+      h1: "Men's Running Ankle Sock 3-Pack",
+      text: "Soft, sweat-wicking, and cushioned to go the distance."
+    }
+  });
+
+  const response = await runScan({
+    url: "https://bombas.example/products/mens-running-ankle-sock-3-pack",
+    identities: ["Socially responsible brand"]
+  }, {
+    scrapeStorefront: async () => donationPayload,
+    analyzeVisibility: async () => JSON.stringify({
+      summary: "The storefront suggests a comfort-focused brand with a strong donation mission.",
+      inferred_identities: [
+        {
+          label: "Socially responsible brand",
+          because: "Homepage text says \"ONE PURCHASED = ONE DONATED\" and \"We donate on your behalf in all 50 states.\"."
+        }
+      ],
+      submitted_results: [
+        {
+          label: "Socially responsible brand",
+          status: "PASS",
+          evidence: "Homepage text says \"ONE PURCHASED = ONE DONATED\" and \"We donate on your behalf in all 50 states.\"."
+        }
+      ],
+      recommendations: [],
+      llms_txt_descriptions: {
+        "/pages/help-center": "Help center page with information on shipping, returns, and exchanges."
+      }
+    }),
+    resolveStoreName: () => "Bombas"
+  });
+
+  assert.equal(response.ok, true);
+  assert.equal(response.data.audit.inferred_identities[0].label, "Socially responsible brand");
+  assert.match(response.data.audit.inferred_identities[0].because, /ONE PURCHASED = ONE DONATED/);
+  assert.doesNotMatch(response.data.audit.inferred_identities[0].because, /outside knowledge|known for|mission-driven/i);
 });
 
 test("runScan downgrades conditional free shipping PASS to FAIL for unconditional claims", async () => {
@@ -236,7 +300,9 @@ test("runScan downgrades conditional free shipping PASS to FAIL for unconditiona
     scrapeStorefront: async () => shippingPayload,
     analyzeVisibility: async () => JSON.stringify({
       summary: "Summary",
-      inferred_identities: ["Comfort-focused"],
+      inferred_identities: [
+        { label: "Comfort-focused", because: "Homepage text says \"Comfort-first essentials\"." }
+      ],
       submitted_results: [
         { label: "free shipping", status: "PASS", evidence: "Free Shipping Over $75 + Free Returns is explicitly stated on the product page." }
       ],
@@ -254,6 +320,58 @@ test("runScan downgrades conditional free shipping PASS to FAIL for unconditiona
   assert.equal(response.data.audit.submitted_results[0].status, "FAIL");
   assert.match(response.data.audit.submitted_results[0].evidence, /conditional, not unconditional/i);
   assert.match(response.data.audit.submitted_results[0].evidence, /over \$75/i);
+});
+
+test("runScan preserves conflict evidence wording for cross-surface shipping conflicts", async () => {
+  const conflictPayload = buildScrapePayload({
+    storeUrl: "https://bombas.example",
+    homepage: {
+      title: "Bombas",
+      h1: "Comfort-first essentials",
+      text: "Free Shipping",
+      internalLinks: [
+        { href: "/policies/shipping-policy", text: "Shipping Policy" }
+      ]
+    },
+    productPage: {
+      url: "/products/mens-running-ankle-sock-3-pack",
+      title: "Men's Running Ankle Sock 3-Pack",
+      h1: "Men's Running Ankle Sock 3-Pack",
+      text: "Soft, sweat-wicking, and cushioned to go the distance."
+    }
+  });
+
+  const response = await runScan({
+    url: "https://bombas.example/products/mens-running-ankle-sock-3-pack",
+    identities: ["free shipping"]
+  }, {
+    scrapeStorefront: async () => conflictPayload,
+    analyzeVisibility: async () => JSON.stringify({
+      summary: "Summary",
+      inferred_identities: [
+        { label: "Comfort-focused", because: "Product text says \"Soft, sweat-wicking, and cushioned to go the distance.\"." }
+      ],
+      submitted_results: [
+        {
+          label: "free shipping",
+          status: "FAIL",
+          evidence: "CONFLICT DETECTED — homepage banner: 'Free Shipping' / policy text: 'Free Shipping Over $75' — AI interpretation: conflicting signals, claim cannot be confirmed as unconditional."
+        }
+      ],
+      recommendations: [
+        { priority: 1, surface: "shipping policy page", issue: "Shipping promise conflicts across surfaces", fix: "Align the homepage banner and shipping policy so the claim is stated consistently." }
+      ],
+      llms_txt_descriptions: {
+        "/policies/shipping-policy": "Shipping policy page for delivery timing and thresholds."
+      }
+    }),
+    resolveStoreName: () => "Bombas"
+  });
+
+  assert.equal(response.ok, true);
+  assert.match(response.data.audit.submitted_results[0].evidence, /^CONFLICT DETECTED/);
+  assert.match(response.data.audit.submitted_results[0].evidence, /homepage banner/);
+  assert.match(response.data.audit.submitted_results[0].evidence, /policy text/);
 });
 
 test("runScan keeps unconditional free shipping PASS when evidence is truly unconditional", async () => {
@@ -280,7 +398,9 @@ test("runScan keeps unconditional free shipping PASS when evidence is truly unco
     scrapeStorefront: async () => shippingPayload,
     analyzeVisibility: async () => JSON.stringify({
       summary: "Summary",
-      inferred_identities: ["Comfort-focused"],
+      inferred_identities: [
+        { label: "Comfort-focused", because: "Product text says \"Enjoy free shipping on every order.\"." }
+      ],
       submitted_results: [
         { label: "free shipping", status: "PASS", evidence: "Enjoy free shipping on every order." }
       ],
@@ -323,7 +443,9 @@ test("runScan keeps the requested Shopify product when the URL is collection-sco
     scrapeStorefront: async () => payload,
     analyzeVisibility: async () => JSON.stringify({
       summary: "Summary",
-      inferred_identities: ["Designer handbags"],
+      inferred_identities: [
+        { label: "Designer handbags", because: "Homepage text says \"Designer handbags, clothing, and accessories.\"." }
+      ],
       submitted_results: [
         { label: "designer handbag", status: "PASS", evidence: "Designer carryall bag in denim blue." }
       ],
@@ -364,7 +486,9 @@ test("runScan does not treat shipping text as conditional returns evidence", asy
     scrapeStorefront: async () => payload,
     analyzeVisibility: async () => JSON.stringify({
       summary: "Summary",
-      inferred_identities: ["Skincare"],
+      inferred_identities: [
+        { label: "Skincare", because: "Product path and page title identify a skincare product." }
+      ],
       submitted_results: [
         {
           label: "free returns",
@@ -411,7 +535,9 @@ test("runScan removes no-issue recommendations and caps actions to non-pass clai
     scrapeStorefront: async () => payload,
     analyzeVisibility: async () => JSON.stringify({
       summary: "Summary",
-      inferred_identities: ["Skincare"],
+      inferred_identities: [
+        { label: "Skincare", because: "Product path and page title identify a skincare product." }
+      ],
       submitted_results: [
         { label: "discount", status: "PASS", evidence: "Current price: $56.10. Original price: $66.00." },
         { label: "free returns", status: "FAIL", evidence: "No evidence of free returns found." },
@@ -459,7 +585,9 @@ test("runScan supports explicit new-arrival badge claims when NEW is present in 
     scrapeStorefront: async () => payload,
     analyzeVisibility: async () => JSON.stringify({
       summary: "Summary",
-      inferred_identities: ["Men's grooming"],
+      inferred_identities: [
+        { label: "Men's grooming", because: "Homepage text says \"Premium beard care.\"." }
+      ],
       submitted_results: [
         {
           label: "new arrival",
@@ -504,7 +632,9 @@ test("runScan upgrades failed merchandising labels when explicit badge evidence 
     scrapeStorefront: async () => payload,
     analyzeVisibility: async () => JSON.stringify({
       summary: "Summary",
-      inferred_identities: ["Men's grooming"],
+      inferred_identities: [
+        { label: "Men's grooming", because: "Homepage text says \"30% Off Cologne Sets\" and the product title is \"Norse Winter Beard Balm\"." }
+      ],
       submitted_results: [
         { label: "new arrival", status: "FAIL", evidence: "No evidence of a new arrival label found." },
         { label: "sale", status: "FAIL", evidence: "No general sale section found." },

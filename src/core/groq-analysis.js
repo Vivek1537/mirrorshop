@@ -21,6 +21,9 @@ export function buildVisibilityPrompt({ submittedIdentities, scrapePayload }) {
         "Use UNCLEAR only when indirect but relevant evidence exists without an explicit claim.",
         "For premium or luxury claims, indirect signals like price point, material specs, or engineered feature language can justify UNCLEAR, but not PASS.",
         "Use FAIL when no supporting evidence exists in the payload or when the storefront evidence clearly contradicts the claim.",
+        "If evidence for a submitted identity contains conflicting signals from different storefront surfaces, structure the evidence field exactly as: CONFLICT DETECTED — [surface 1]: '[exact quote]' / [surface 2]: '[exact quote]' — AI interpretation: conflicting signals, claim cannot be confirmed as stated.",
+        "Only trigger CONFLICT DETECTED when signals come from two distinct page surfaces or sections with genuinely opposing claims.",
+        "Do not use CONFLICT DETECTED for a single conditional statement on one page.",
         "For unconditional claims like free shipping or free returns, any threshold, minimum order amount, or qualifier like over, above, or orders over means the result must be FAIL, not PASS.",
         "Generate exactly one recommendation for each submitted identity marked FAIL or UNCLEAR.",
         "Each recommendation must name the failed target identity, the missing evidence type, and the exact Shopify surface to edit, such as product description, collection description, shipping policy page, FAQ/help page, announcement bar, homepage hero, product metafield, or structured data.",
@@ -38,7 +41,12 @@ export function buildVisibilityPrompt({ submittedIdentities, scrapePayload }) {
         submitted_identities: identities,
         required_json_shape: {
           summary: "One sentence overall AI perception.",
-          inferred_identities: ["Up to 3 concise inferred identities."],
+          inferred_identities: [
+            {
+              label: "Concise inferred identity.",
+              because: "One sentence citing exact storefront evidence from the provided storefront data only."
+            }
+          ],
           submitted_results: [
             {
               label: "Submitted identity label.",
@@ -65,6 +73,13 @@ export function buildVisibilityPrompt({ submittedIdentities, scrapePayload }) {
           "Use UNCLEAR only when related indirect evidence exists but is insufficient for a direct claim.",
           "Use FAIL when evidence contradicts the submitted identity or no supporting evidence exists.",
           "Do not be generous. Missing explicit evidence is a FAIL, not a soft pass.",
+          "Use CONFLICT DETECTED only when you find genuinely opposing signals from two distinct storefront surfaces or sections.",
+          "When using CONFLICT DETECTED, structure evidence exactly as: CONFLICT DETECTED — [surface 1]: '[exact quote]' / [surface 2]: '[exact quote]' — AI interpretation: conflicting signals, claim cannot be confirmed as stated.",
+          "Do not use CONFLICT DETECTED for one conditional statement on a single page.",
+          "Return inferred_identities as an array of objects with label and because fields only.",
+          "Each inferred_identities.because value must cite only specific text, schema fields, or badges present in the provided storefront data.",
+          "Cite only from the provided storefront data, no outside knowledge.",
+          "Each inferred_identities.because value must be a maximum of one sentence.",
           "For premium or luxury claims, indirect signals like price, materials, or engineered feature language may justify UNCLEAR, but not PASS.",
           "For unconditional claims like free shipping or free returns, conditional evidence such as over $75, orders over $50, above a threshold, or minimum order language must be graded FAIL.",
           "If your evidence says no evidence was found, the status must be FAIL, not UNCLEAR.",
@@ -137,12 +152,27 @@ function normalizeIdentities(value) {
 function normalizeAuditResult(result) {
   return {
     ...result,
+    inferred_identities: Array.isArray(result?.inferred_identities)
+      ? result.inferred_identities.map((item) => normalizeInferredIdentity(item))
+      : result?.inferred_identities,
     submitted_results: Array.isArray(result?.submitted_results)
       ? result.submitted_results.map((item) => normalizeSubmittedResult(item))
       : result?.submitted_results,
     recommendations: Array.isArray(result?.recommendations)
       ? result.recommendations.map((item) => normalizeRecommendation(item))
       : result?.recommendations
+  };
+}
+
+function normalizeInferredIdentity(item) {
+  if (!item || typeof item !== "object") {
+    return item;
+  }
+
+  return {
+    ...item,
+    label: typeof item.label === "string" ? item.label.trim() : item.label,
+    because: typeof item.because === "string" ? item.because.trim() : item.because
   };
 }
 

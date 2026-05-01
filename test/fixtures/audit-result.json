@@ -1,6 +1,19 @@
 {
   "summary": "An AI shopping agent could infer that GlowJar sells premium handmade skincare, but shipping speed is not evidenced.",
-  "inferred_identities": ["Premium skincare", "Handmade", "Giftable"],
+  "inferred_identities": [
+    {
+      "label": "Premium skincare",
+      "because": "Homepage text says \"Premium handmade skincare for gifting.\"."
+    },
+    {
+      "label": "Handmade",
+      "because": "Homepage text says \"Premium handmade skincare for gifting.\"."
+    },
+    {
+      "label": "Giftable",
+      "because": "Homepage text says \"Premium handmade skincare for gifting.\"."
+    }
+  ],
   "submitted_results": [
     {
       "label": "Vegan",

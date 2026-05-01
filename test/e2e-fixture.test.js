@@ -31,7 +31,11 @@ test("fixture end-to-end scan produces dashboard-ready audit payload", async () 
     scrapeStorefront: async () => scrapePayload,
     analyzeVisibility: async () => JSON.stringify({
       summary: "An AI shopping agent could infer premium handmade skincare, but shipping speed is not evidenced.",
-      inferred_identities: ["Premium skincare", "Handmade", "Giftable"],
+      inferred_identities: [
+        { label: "Premium skincare", because: "Homepage text says \"Premium handmade skincare for gifting.\"." },
+        { label: "Handmade", because: "Homepage text says \"Premium handmade skincare for gifting.\"." },
+        { label: "Giftable", because: "Homepage text says \"Premium handmade skincare for gifting.\"." }
+      ],
       submitted_results: [
         { label: "Vegan", status: "UNCLEAR", evidence: "No vegan certification evidence found." },
         { label: "Affordable", status: "FAIL", evidence: "Storefront language emphasizes premium positioning." },

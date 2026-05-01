@@ -194,6 +194,14 @@ h3 {
   gap: 28px;
 }
 
+.supporting-copy {
+  max-width: 560px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
 .chip-stack {
   display: flex;
   flex-wrap: wrap;
@@ -212,6 +220,12 @@ h3 {
 .inferred .claim-chip {
   border-color: rgba(107, 166, 217, 0.65);
   color: #d9ecff;
+}
+
+.inferred-evidence-grid {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
 }
 
 .evidence-list {
@@ -249,12 +263,38 @@ h3 {
   color: var(--red);
 }
 
+.evidence-card.conflict {
+  border-left: 4px solid var(--amber);
+  padding-left: 12px;
+}
+
 .evidence-card p,
 .action-list span {
   display: block;
   margin-top: 14px;
   color: var(--muted);
   line-height: 1.5;
+}
+
+.inferred-identity {
+  min-height: 0;
+  border-color: rgba(107, 166, 217, 0.35);
+  background:
+    linear-gradient(180deg, rgba(107, 166, 217, 0.08), rgba(107, 166, 217, 0)),
+    var(--panel);
+}
+
+.inferred-identity .card-topline span {
+  color: var(--blue);
+}
+
+.evidence-note {
+  margin-top: 14px;
+  color: var(--amber);
+  font-family: "Courier New", monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .action-list {

@@ -38,7 +38,9 @@ test("llms.txt assembly uses real extracted links and LLM descriptions only", as
 test("contract rejects LLM-generated absolute URL description keys", () => {
   const errors = validateAuditResult({
     summary: "Summary",
-    inferred_identities: ["Skincare"],
+    inferred_identities: [
+      { label: "Skincare", because: "Homepage text says \"Premium handmade skincare.\"." }
+    ],
     submitted_results: [{ label: "Vegan", status: "PASS", evidence: "Evidence" }],
     recommendations: [{ priority: 1, surface: "product description", issue: "Issue", fix: "Fix" }],
     llms_txt_descriptions: {

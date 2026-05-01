@@ -34,6 +34,8 @@ test("dashboard renders all five revised MirrorShop sections", async () => {
   assert.equal(pageHtml.match(/AI Storefront Visibility Audit/g).length, 1);
   assert.match(html, /Submitted Identities/);
   assert.match(html, /Inferred Identities/);
+  assert.match(html, /Each inference is paired with the exact storefront evidence/);
+  assert.match(html, /Evidence/);
   assert.match(html, /Deterministic llms\.txt/);
 });
 
@@ -41,7 +43,7 @@ test("dashboard escapes user-controlled audit content", () => {
   const html = renderPage({
     audit: {
       summary: "<script>alert(1)</script>",
-      inferred_identities: ["<b>Luxury</b>"],
+      inferred_identities: [{ label: "<b>Luxury</b>", because: "<script>alert(2)</script>" }],
       submitted_results: [
         { label: "Vegan", status: "FAIL", evidence: "<img src=x onerror=alert(1)>" }
       ],
@@ -61,4 +63,31 @@ test("dashboard escapes user-controlled audit content", () => {
   assert.match(html, /&lt;script&gt;alert/);
   assert.match(html, /&lt;img src=x/);
   assert.match(html, /&lt;surface&gt;/);
+});
+
+test("dashboard highlights conflict evidence cards", () => {
+  const html = renderDashboard({
+    audit: {
+      summary: "Summary",
+      inferred_identities: [
+        { label: "Shipping-focused", because: "Homepage text says \"Free Shipping\"." }
+      ],
+      submitted_results: [
+        {
+          label: "free shipping",
+          status: "FAIL",
+          evidence: "CONFLICT DETECTED — homepage banner: 'Free Shipping' / policy text: 'Free Shipping Over $75' — AI interpretation: conflicting signals, claim cannot be confirmed as unconditional."
+        }
+      ],
+      recommendations: []
+    },
+    llmsTxt: "# Store",
+    scrape: {
+      source_coverage: {
+        homepage: true
+      }
+    }
+  });
+
+  assert.match(html, /evidence-card fail conflict/);
 });

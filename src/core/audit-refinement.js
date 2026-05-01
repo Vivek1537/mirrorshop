@@ -180,6 +180,10 @@ function refineConditionalUnconditionalClaim(item, scrapePayload) {
     return null;
   }
 
+  if (typeof item.evidence === "string" && item.evidence.includes("CONFLICT DETECTED")) {
+    return null;
+  }
+
   const signal = findConditionalClaimSignal(item, scrapePayload, claimType);
   if (!signal) {
     return null;

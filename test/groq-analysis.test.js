@@ -31,12 +31,18 @@ test("prompt uses defensible AI shopping agent language and bans URL invention",
   assert.match(combined, /Never invent links/);
   assert.match(combined, /\/products\/vitamin-c-serum/);
   assert.match(combined, /conditional evidence such as over \$75/i);
+  assert.match(combined, /CONFLICT DETECTED/);
+  assert.match(combined, /two distinct storefront surfaces or sections/i);
+  assert.match(combined, /Do not use CONFLICT DETECTED for one conditional statement on a single page/i);
 });
 
 test("parser accepts valid revised audit result", () => {
   const parsed = parseGroqAuditResponse(JSON.stringify({
     summary: "An AI shopping agent could infer premium handmade skincare.",
-    inferred_identities: ["Premium skincare", "Handmade"],
+    inferred_identities: [
+      { label: "Premium skincare", because: "Homepage text says \"Premium handmade skincare.\"." },
+      { label: "Handmade", because: "Homepage text says \"Premium handmade skincare.\"." }
+    ],
     submitted_results: [
       { label: "Vegan", status: "UNCLEAR", evidence: "No vegan certification evidence found." }
     ],
@@ -49,13 +55,16 @@ test("parser accepts valid revised audit result", () => {
   }), scrapePayload.internal_links.map((link) => link.path), scrapePayload.source_coverage);
 
   assert.equal(parsed.source_coverage.product_page, true);
-  assert.equal(parsed.inferred_identities[0], "Premium skincare");
+  assert.equal(parsed.inferred_identities[0].label, "Premium skincare");
+  assert.match(parsed.inferred_identities[0].because, /Premium handmade skincare/);
 });
 
 test("parser upgrades no-evidence UNCLEAR results to FAIL", () => {
   const parsed = parseGroqAuditResponse(JSON.stringify({
     summary: "Summary",
-    inferred_identities: ["Skincare"],
+    inferred_identities: [
+      { label: "Skincare", because: "Homepage text says \"Premium handmade skincare.\"." }
+    ],
     submitted_results: [
       { label: "Premium", status: "UNCLEAR", evidence: "No explicit premium proof found on the storefront." }
     ],
@@ -74,7 +83,9 @@ test("parser rejects descriptions for links the scraper did not extract", () => 
   assert.throws(() => {
     parseGroqAuditResponse(JSON.stringify({
       summary: "Summary",
-      inferred_identities: ["Skincare"],
+      inferred_identities: [
+        { label: "Skincare", because: "Homepage text says \"Premium handmade skincare.\"." }
+      ],
       submitted_results: [
         { label: "Vegan", status: "FAIL", evidence: "No evidence found." }
       ],
@@ -101,7 +112,9 @@ test("prompt requires 1 to 3 submitted identities", () => {
 test("parser infers structured recommendation surface from fix text", () => {
   const parsed = parseGroqAuditResponse(JSON.stringify({
     summary: "Summary",
-    inferred_identities: ["Skincare"],
+    inferred_identities: [
+      { label: "Skincare", because: "Homepage text says \"Premium handmade skincare.\"." }
+    ],
     submitted_results: [
       { label: "Shipping", status: "FAIL", evidence: "No shipping SLA found." }
     ],
@@ -118,4 +131,28 @@ test("parser infers structured recommendation surface from fix text", () => {
   }), ["/products/vitamin-c-serum"], scrapePayload.source_coverage);
 
   assert.equal(parsed.recommendations[0].surface, "shipping policy page");
+});
+
+test("parser rejects inferred identities that include extra fields", () => {
+  assert.throws(() => {
+    parseGroqAuditResponse(JSON.stringify({
+      summary: "Summary",
+      inferred_identities: [
+        {
+          label: "Skincare",
+          because: "Homepage text says \"Premium handmade skincare.\".",
+          confidence: "high"
+        }
+      ],
+      submitted_results: [
+        { label: "Vegan", status: "FAIL", evidence: "No evidence found." }
+      ],
+      recommendations: [
+        { priority: 1, surface: "product description", issue: "Issue", fix: "Fix" }
+      ],
+      llms_txt_descriptions: {
+        "/products/vitamin-c-serum": "Serum product page."
+      }
+    }), ["/products/vitamin-c-serum"], scrapePayload.source_coverage);
+  }, /only label and because fields/);
 });
